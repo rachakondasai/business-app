@@ -1,66 +1,30 @@
-import { useState } from "react";
-import Tesseract from "tesseract.js";
 import Navbar from "../components/Navbar";
+import { motion } from "framer-motion";
 
 export default function Home() {
-  const [image, setImage] = useState(null);
-  const [result, setResult] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleImage = (e) => {
-    setImage(e.target.files[0]);
-  };
-
-  const handleUpload = async () => {
-    if (!image) return alert("Please select an image");
-
-    setLoading(true);
-    const reader = new FileReader();
-    reader.readAsDataURL(image);
-
-    reader.onload = async () => {
-      const { data: { text } } = await Tesseract.recognize(reader.result, "eng");
-      setResult(text);
-
-      // Determine session based on current time
-      const now = new Date();
-      const hour = now.getHours();
-      let session = "Unknown";
-      if (hour >= 10 && hour < 13) session = "Morning";
-      else if (hour >= 14 && hour < 16) session = "Afternoon";
-      else if (hour >= 18 && hour < 20) session = "Evening";
-
-      // Save to Supabase via API
-      await fetch("/api/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ item: text.trim(), session }),
-      });
-    };
-    setLoading(false);
-  };
-
   return (
     <div>
       <Navbar />
-      <div className="p-4">
-        <h1 className="text-xl font-bold mb-4">Upload Image</h1>
-        <input type="file" accept="image/*" onChange={handleImage} />
-        <button
-          className="ml-2 px-4 py-2 bg-blue-600 text-white rounded"
-          onClick={handleUpload}
-          disabled={loading}
+      <motion.div
+        className="flex flex-col items-center justify-center h-[80vh] text-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+      >
+        <h1 className="text-5xl font-extrabold text-indigo-700 mb-6">
+          Business App 🚀
+        </h1>
+        <p className="text-lg text-gray-600 max-w-xl mb-6">
+          Manage your sales sessions with ease. Upload images, let OCR extract numbers, 
+          and view reports automatically.
+        </p>
+        <a
+          href="/upload"
+          className="px-6 py-3 bg-indigo-600 text-white rounded-lg shadow-lg hover:bg-indigo-700 transition"
         >
-          {loading ? "Processing..." : "Upload"}
-        </button>
-
-        {result && (
-          <div className="mt-4">
-            <h2 className="font-bold">Extracted Text:</h2>
-            <pre>{result}</pre>
-          </div>
-        )}
-      </div>
+          Get Started
+        </a>
+      </motion.div>
     </div>
   );
 }
