@@ -32,10 +32,13 @@ export default function Upload() {
       const resData = await response.json();
       console.log("Saved to DB:", resData);
 
-      setLoading(false);
       if (!response.ok) {
         alert("Error saving to database: " + resData.error);
+      } else {
+        window.location.href = "/report";
       }
+
+      setLoading(false);
     };
   };
 
