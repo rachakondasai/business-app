@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Tesseract from "tesseract.js";
 import Navbar from "../components/Navbar";
+import { motion } from "framer-motion";
 
 export default function Upload() {
   const [image, setImage] = useState(null);
@@ -35,29 +36,45 @@ export default function Upload() {
   };
 
   return (
-    <div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-100 to-blue-100">
       <Navbar />
       <div className="p-8 flex flex-col items-center">
-        <h1 className="text-3xl font-bold text-indigo-700 mb-6">Upload Image</h1>
-        <input
+        <motion.h1
+          className="text-4xl font-bold text-indigo-700 mb-6"
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          Upload Image
+        </motion.h1>
+        <motion.input
           type="file"
           accept="image/*"
           onChange={(e) => setImage(e.target.files[0])}
-          className="mb-4"
+          className="mb-4 border border-indigo-300 rounded-lg p-2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
         />
-        <button
-          className="px-6 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700"
+        <motion.button
+          className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-teal-600 text-white rounded-lg shadow-lg hover:scale-105 transition-all"
           onClick={handleUpload}
           disabled={loading}
+          whileTap={{ scale: 0.95 }}
         >
           {loading ? "Processing..." : "Upload"}
-        </button>
+        </motion.button>
 
         {result && (
-          <div className="mt-6 w-full max-w-lg bg-gray-100 p-4 rounded shadow">
-            <h2 className="font-semibold mb-2">Extracted Text:</h2>
-            <pre>{result}</pre>
-          </div>
+          <motion.div
+            className="mt-6 w-full max-w-lg bg-white p-6 rounded-xl shadow-lg"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
+          >
+            <h2 className="font-semibold text-indigo-700 mb-2">Extracted Text:</h2>
+            <pre className="text-gray-700 whitespace-pre-wrap">{result}</pre>
+          </motion.div>
         )}
       </div>
     </div>
