@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
+import { motion } from "framer-motion";
 import Papa from "papaparse";
 import { saveAs } from "file-saver";
-import { motion } from "framer-motion";
 
 export default function Report() {
   const [sales, setSales] = useState([]);
+  const [activeTab, setActiveTab] = useState("Morning");
 
   useEffect(() => {
     async function fetchData() {
@@ -16,71 +17,86 @@ export default function Report() {
     fetchData();
   }, []);
 
-  // Export sales as CSV
-  const exportCSV = () => {
-    if (sales.length === 0) return alert("No data to export");
+  // Group by session
+  const groupedSales = sales.reduce((acc, item) => {
+    acc[item.session] = acc[item.session] || [];
+    acc[item.session].push(item);
+    return acc;
+  }, {});
 
-    const csv = Papa.unparse(
-      sales.map((s) => ({
-        Session: s.session,
-        Item: s.item,
-        Time: new Date(s.created_at).toLocaleString(),
-      }))
-    );
+  const sessions = ["Morning", "Afternoon", "Evening"];
 
+  // CSV Export Function
+  const exportCSV = (session) => {
+    const rows = groupedSales[session] || [];
+    if (rows.length === 0) return alert("No data to export!");
+
+    const csv = Papa.unparse(rows);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, "sales-report.csv");
+    saveAs(blob, `${session}-sales.csv`);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-indigo-100 to-purple-100">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-100 to-pink-100">
       <Navbar />
-      <div className="p-6">
-        <motion.h1
-          className="text-3xl font-bold mb-6 text-indigo-700"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          Sales Report
-        </motion.h1>
-        <motion.button
-          className="mb-4 px-6 py-2 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-lg shadow-lg hover:scale-105 transition-all"
-          onClick={exportCSV}
-          whileTap={{ scale: 0.95 }}
-        >
-          Download CSV
-        </motion.button>
+      <div className="max-w-4xl mx-auto p-6">
+        <h1 className="text-4xl font-bold text-center text-indigo-800 mb-8">
+          📊 Sales Report
+        </h1>
 
-        <motion.table
-          className="w-full border shadow-lg rounded-xl overflow-hidden bg-white"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
+        {/* Tabs */}
+        <div className="flex justify-center space-x-4 mb-6">
+          {sessions.map((session) => (
+            <button
+              key={session}
+              onClick={() => setActiveTab(session)}
+              className={`px-6 py-2 rounded-lg shadow-md transition-all ${
+                activeTab === session
+                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                  : "bg-white text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              {session}
+            </button>
+          ))}
+        </div>
+
+        {/* Export Button */}
+        <div className="flex justify-center mb-4">
+          <button
+            onClick={() => exportCSV(activeTab)}
+            className="px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg shadow hover:scale-105 transition-all"
+          >
+            ⬇ Export {activeTab} Sales
+          </button>
+        </div>
+
+        {/* Animated Report */}
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="bg-white rounded-xl shadow-lg p-6"
         >
-          <thead>
-            <tr className="bg-indigo-200 text-indigo-900">
-              <th className="p-3">Session</th>
-              <th className="p-3">Item</th>
-              <th className="p-3">Time</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sales.map((s) => (
-              <motion.tr
-                key={s.id}
-                className="border-b hover:bg-indigo-50"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-              >
-                <td className="p-3">{s.session}</td>
-                <td className="p-3">{s.item}</td>
-                <td className="p-3">{new Date(s.created_at).toLocaleString()}</td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </motion.table>
+          {groupedSales[activeTab] && groupedSales[activeTab].length > 0 ? (
+            <ul className="space-y-3">
+              {groupedSales[activeTab].map((item, index) => (
+                <li
+                  key={index}
+                  className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg shadow-sm border border-indigo-100"
+                >
+                  <p className="font-medium text-gray-800">{item.item}</p>
+                  <p className="text-sm text-gray-500">
+                    Uploaded at: {new Date(item.timestamp).toLocaleString()}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-center text-gray-500">No sales found.</p>
+          )}
+        </motion.div>
       </div>
     </div>
   );
