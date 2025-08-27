@@ -88,21 +88,3 @@ export default function Upload() {
     </div>
   );
 }
-useEffect(() => {
-  async function fetchData() {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await fetch("/api/report");
-      if (!res.ok) throw new Error("Failed to fetch sales data");
-      const data = await res.json();
-      setSales(data);
-    } catch (err) {
-      console.error("Report fetch error:", err);
-      setError("Unable to load sales data. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
-  }
-  fetchData();
-}, []);
