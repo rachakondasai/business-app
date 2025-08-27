@@ -126,17 +126,3 @@ export default function Report() {
     </div>
   );
 }
-useEffect(() => {
-  const loadData = async () => {
-    try {
-      const res = await fetch("/api/report");
-      if (!res.ok) throw new Error("Failed to fetch report");
-      const data = await res.json();
-      setSales(data);
-    } catch (err) {
-      console.error("Report fetch error:", err);
-      setSales([]);
-    }
-  };
-  loadData();
-}, []);
