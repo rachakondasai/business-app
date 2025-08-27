@@ -1,12 +1,10 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import { motion } from "framer-motion";
-import Papa from "papaparse";
-import { saveAs } from "file-saver";
 
 export default function Report() {
   const [sales, setSales] = useState([]);
-  const [activeTab, setActiveTab] = useState("Morning");
+  const [activeSession, setActiveSession] = useState("Morning");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -20,7 +18,7 @@ export default function Report() {
         const data = await res.json();
         setSales(data);
       } catch (err) {
-        console.error(err);
+        console.error("Report fetch error:", err);
         setError("Unable to load sales data. Please try again later.");
       } finally {
         setLoading(false);
@@ -29,47 +27,69 @@ export default function Report() {
     fetchData();
   }, []);
 
-  // Group by session (memoized)
-  const groupedSales = useMemo(
-    () =>
-      sales.reduce((acc, item) => {
-        acc[item.session] = acc[item.session] || [];
-        acc[item.session].push(item);
-        return acc;
-      }, {}),
-    [sales]
-  );
-
-  const sessions = ["Morning", "Afternoon", "Evening"];
-
-  // CSV Export Function
   const exportCSV = (session) => {
-    const rows = groupedSales[session] || [];
-    if (rows.length === 0) return;
+    const sessionSales = sales.find((s) => s.session === session)?.sales || [];
+    const csvContent = [
+      ["ID", "Item", "Session", "Timestamp"],
+      ...sessionSales.map((s) => [s.id, s.item, s.session, s.timestamp]),
+    ]
+      .map((e) => e.join(","))
+      .join("\n");
 
-    const csv = Papa.unparse(rows);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, `${session}-sales.csv`);
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${session}_sales.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const renderSales = () => {
+    const sessionSales = sales.find((s) => s.session === activeSession)?.sales || [];
+
+    if (loading) return <p>Loading sales...</p>;
+    if (error) return <p className="text-red-500">{error}</p>;
+    if (sessionSales.length === 0) return <p>No sales found.</p>;
+
+    return sessionSales.map((sale) => (
+      <motion.div
+        key={sale.id}
+        className="p-4 bg-white rounded-lg shadow mb-3"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <p className="font-semibold text-gray-800">{sale.item}</p>
+        <p className="text-sm text-gray-500">
+          Uploaded at:{" "}
+          {sale.timestamp ? new Date(sale.timestamp).toLocaleString() : "N/A"}
+        </p>
+      </motion.div>
+    ));
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-100 to-pink-100">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100">
       <Navbar />
-      <div className="max-w-4xl mx-auto p-6">
-        <h1 className="text-4xl font-bold text-center text-indigo-800 mb-8">
+      <div className="p-8 max-w-3xl mx-auto">
+        <motion.h1
+          className="text-4xl font-bold text-center text-indigo-700 mb-6"
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           📊 Sales Report
-        </h1>
+        </motion.h1>
 
-        {/* Tabs */}
-        <div className="flex justify-center space-x-4 mb-6">
-          {sessions.map((session) => (
+        <div className="flex justify-center gap-4 mb-6">
+          {["Morning", "Afternoon", "Evening"].map((session) => (
             <button
               key={session}
-              onClick={() => setActiveTab(session)}
-              className={`px-6 py-2 rounded-lg shadow-md transition-all ${
-                activeTab === session
-                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-100"
+              onClick={() => setActiveSession(session)}
+              className={`px-4 py-2 rounded-lg shadow-md ${
+                activeSession === session
+                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white"
+                  : "bg-white text-gray-700 border"
               }`}
             >
               {session}
@@ -77,51 +97,16 @@ export default function Report() {
           ))}
         </div>
 
-        {/* Export Button */}
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center mb-6">
           <button
-            disabled={!groupedSales[activeTab] || groupedSales[activeTab].length === 0}
-            onClick={() => exportCSV(activeTab)}
-            className={`px-6 py-2 rounded-lg shadow transition-all ${
-              groupedSales[activeTab]?.length
-                ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:scale-105"
-                : "bg-gray-300 text-gray-600 cursor-not-allowed"
-            }`}
+            onClick={() => exportCSV(activeSession)}
+            className="px-5 py-2 bg-green-600 text-white rounded-lg shadow hover:scale-105 transition-all"
           >
-            ⬇ Export {activeTab} Sales
+            📥 Export {activeSession} Sales
           </button>
-        </div>        
+        </div>
 
-        {/* Loading / Error / Report */}
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="bg-white rounded-xl shadow-lg p-6"
-        >
-          {loading ? (
-            <p className="text-center text-indigo-600 font-medium">Loading sales...</p>
-          ) : error ? (
-            <p className="text-center text-red-500 font-medium">{error}</p>
-          ) : groupedSales[activeTab]?.length > 0 ? (
-            <ul className="space-y-3">
-              {groupedSales[activeTab].map((item, index) => (
-                <li
-                  key={item.id || index}
-                  className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg shadow-sm border border-indigo-100"
-                >
-                  <p className="font-medium text-gray-800">{item.item}</p>
-                  <p className="text-sm text-gray-500">
-                    Uploaded at: {new Date(item.timestamp).toLocaleString()}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-center text-gray-500">No sales found.</p>
-          )}
-        </motion.div>
+        <div>{renderSales()}</div>
       </div>
     </div>
   );
