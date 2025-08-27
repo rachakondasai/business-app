@@ -8,24 +8,15 @@ const supabase = createClient(
 export default async function handler(req, res) {
   if (req.method === "GET") {
     try {
-      const { data, error } = await supabase
-        .from("sales")
-        .select("id, item, session, timestamp")
-        .order("timestamp", { ascending: false });
+      // Call the SQL function we created
+      const { data, error } = await supabase.rpc("group_sales_by_session");
 
       if (error) {
         console.error("Supabase error:", error.message);
         return res.status(500).json({ error: error.message });
       }
 
-      // Group by session safely
-      const grouped = (Array.isArray(data) ? data : []).reduce((acc, sale) => {
-        if (!acc[sale.session]) acc[sale.session] = [];
-        acc[sale.session].push(sale);
-        return acc;
-      }, {});
-
-      return res.status(200).json(grouped);
+      return res.status(200).json(data || []);
     } catch (err) {
       console.error("API /report error:", err);
       return res.status(500).json({ error: err.message });
