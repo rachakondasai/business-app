@@ -18,8 +18,8 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: error.message });
       }
 
-      // Group by session
-      const grouped = data.reduce((acc, sale) => {
+      // Group by session safely
+      const grouped = (Array.isArray(data) ? data : []).reduce((acc, sale) => {
         if (!acc[sale.session]) acc[sale.session] = [];
         acc[sale.session].push(sale);
         return acc;
