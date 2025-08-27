@@ -1,9 +1,30 @@
-create table if not exists sales (
-    id uuid primary key default gen_random_uuid(),
-    session text not null,
-    item text not null,
-    image_url text,
-    created_at timestamp with time zone default now()
-);
+import { createClient } from '@supabase/supabase-js';
 
-create index if not exists idx_sales_created_at on sales(created_at);
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+export async function GET() {
+  const { data, error } = await supabase
+    .from('sales')
+    .select('id, item, session, timestamp')
+    .order('timestamp', { ascending: true });
+
+  if (error) {
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+  }
+
+  const grouped = data.reduce((acc, sale) => {
+    if (!acc[sale.session]) {
+      acc[sale.session] = [];
+    }
+    acc[sale.session].push({
+      id: sale.id,
+      item: sale.item,
+      timestamp: sale.timestamp,
+    });
+    return acc;
+  }, {});
+
+  return new Response(JSON.stringify(grouped), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
